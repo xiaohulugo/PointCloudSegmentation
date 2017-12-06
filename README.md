@@ -8,7 +8,8 @@ https://github.com/xiaohulugo/xiaohulugo.github.com/blob/master/papers/PLinkage_
 Prerequisites:
 ---
 1. OpenCV > 2.4.x
-2. ANN (included in this repository)
+2. OpenMP
+3. ANN (included in this repository)
 
 Usage:
 ---
