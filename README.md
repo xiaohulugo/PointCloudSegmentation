@@ -1,6 +1,8 @@
-# PointCloudSegmentation
+# PointCloudSegmentation-V2
 
-Four algorithms on point cloud segmentation used in the following paper:
+Modification: (1) use nanoflann.cpp to replace the ann library; (2) remove some cpps
+
+Three algorithms on point cloud segmentation used in the following paper:
 
 Pairwise Linkage for Point Cloud Segmentation, Xiaohu Lu, etc. ISPRS2016.
 https://github.com/xiaohulugo/xiaohulugo.github.com/blob/master/papers/PLinkage_Point_Segmentation_ISPRS2016.pdf
