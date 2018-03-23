@@ -9,12 +9,12 @@ Prerequisites:
 ---
 1. OpenCV > 2.4.x
 2. OpenMP
-3. ANN (included in this repository)
 
 Usage:
 ---
 1. build the project with Cmake
 2. run the code
+3. see main.cpp for interfaces/demos
 
 Performance:
 ---
