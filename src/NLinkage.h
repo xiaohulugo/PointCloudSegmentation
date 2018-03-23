@@ -1,19 +1,19 @@
-#ifndef _NLINKAGE_H_
-#define _NLINKAGE_H_
+#ifndef _PLINKAGE_H_
+#define _PLINKAGE_H_
 #pragma once
 
 #include "PCAFunctions.h"
 #include "opencv/cv.h"
 
-class NLinkage 
+class PLinkage 
 {
 public:
-	NLinkage( int k, double theta, PLANE_MODE planeMode, PCA_MODE pcaMode );
-	~NLinkage();
+	PLinkage( int k, double theta, PLANE_MODE planeMode, PCA_MODE pcaMode );
+	~PLinkage();
 
 	void run( std::vector<std::vector<int> > &clusters );
 
-	void setData( ANNpointArray pointData, int pointNum, std::vector<PCAInfo> &pcaInfos );
+	void setData(PointCloud<double> &data, std::vector<PCAInfo> &pcaInfos );
 
 	void createLinkage( std::vector<PCAInfo> &pcaInfos, std::vector<int> &clusterCenterIdx, std::vector<std::vector<int> > &singleLinkage );
 
@@ -32,8 +32,8 @@ private:
 	PCA_MODE pcaMode;
 
 	int pointNum;
-	ANNpointArray pointData;
+	PointCloud<double> pointData;
 	std::vector<PCAInfo> pcaInfos;
 };
 
-#endif //_NLINKAGE_H_
+#endif //_PLINKAGE_H_

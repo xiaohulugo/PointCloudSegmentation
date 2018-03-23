@@ -1,20 +1,25 @@
-#ifndef _RDPCA_H_
-#define _RDPCA_H_
+#ifndef _PCA_FUNCTIONS_H_
+#define _PCA_FUNCTIONS_H_
 #pragma once
 
-#include "ANN.h"
-#include "opencv/cv.h"
+#include <opencv2/opencv.hpp>
+#include <vector>
+
+#include "nanoflann.hpp"
+#include "utils.h"
+
+using namespace cv;
+using namespace std;
+using namespace nanoflann;
 
 enum PLANE_MODE { PLANE, SURFACE };
 enum PCA_MODE { ORIPCA, RDPCA };
 
 struct PCAInfo
 {
-	double lambda0;
-	cv::Matx31d normal;
-	cv::Matx31d planePt;
-	std::vector<int> idxIn;
-	std::vector<int> idxAll;
+	double lambda0, scale;
+	cv::Matx31d normal, planePt;
+	std::vector<int> idxAll, idxIn;
 
 	PCAInfo &operator =(const PCAInfo &info)
 	{
@@ -22,36 +27,28 @@ struct PCAInfo
 		this->normal = info.normal;
 		this->idxIn = info.idxIn;
 		this->idxAll = info.idxAll;
-
+		this->scale = scale;
 		return *this;
 	}
 };
 
-class PCAFunctions 
+class PCAFunctions
 {
 public:
-	PCAFunctions();
-	~PCAFunctions();
+	PCAFunctions(void) {};
+	~PCAFunctions(void) {};
 
-	void Ori_PCA( ANNpointArray pointData, int pointNum, int k, std::vector<PCAInfo> &pcaInfos, bool outlierRemoval  );
+	void Ori_PCA(PointCloud<double> &cloud, int k, std::vector<PCAInfo> &pcaInfos, double &scale, double &magnitd);
 
-	void HalfK_PCA( ANNpointArray pointData, int pointNum, int k, std::vector<PCAInfo> &pcaInfos, bool outlierRemoval  );
+	void RDPCA(PointCloud<double> &cloud, int k, std::vector<PCAInfo> &pcaInfos, double &scale, double &magnitd);
 
-	void MCS_PCA( ANNpointArray pointData, int pointNum, int k, std::vector<PCAInfo> &pcaInfos, bool outlierRemoval  );
+	void PCASingle(std::vector<std::vector<double> > &pointData, PCAInfo &pcaInfo);
 
-	void MCMD_OutlierRemoval( ANNpointArray &pointData, PCAInfo &pcaInfo );
+	void RDPCASingle(std::vector<std::vector<double> > &pointData, PCAInfo &pcaInfo);
 
-	void PCASingle( ANNpointArray &pointData, int pointNum, PCAInfo &pcaInfo, bool outlierRemoval );
+	void MCMD_OutlierRemoval(std::vector<std::vector<double> > &pointData, PCAInfo &pcaInfo);
 
-	void rdPCASingle( ANNpointArray &pointData, int pointNum, PCAInfo &pcaInfo, bool outlierRemoval );
-
-private:
-	ANNpointArray pointData;
-	int pointNum;
-	int k;
-	std::vector<ANNidxArray> annIdxVector;
-	std::vector<ANNdistArray> annDisVector;
-	static double meadian( std::vector<double> dataset );
+	double meadian(std::vector<double> dataset);
 };
 
-#endif //_RDPCA_H_
+#endif //_PCA_FUNCTIONS_H_

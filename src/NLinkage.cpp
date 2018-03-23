@@ -1,12 +1,11 @@
-﻿#include "NLinkage.h"
+﻿#include "PLinkage.h"
 #include <fstream>
 #include <stdio.h>
 #include <omp.h>
-#include "highgui.h"
 
 using namespace std;
 
-NLinkage::NLinkage( int k, double theta, PLANE_MODE planeMode, PCA_MODE pcaMode )
+PLinkage::PLinkage( int k, double theta, PLANE_MODE planeMode, PCA_MODE pcaMode )
 {
 	this->k = k;
 	this->theta = theta;
@@ -14,18 +13,18 @@ NLinkage::NLinkage( int k, double theta, PLANE_MODE planeMode, PCA_MODE pcaMode 
 	this->pcaMode = pcaMode;
 }
 
-NLinkage::~NLinkage()
+PLinkage::~PLinkage()
 {
 }
 
-void NLinkage::setData( ANNpointArray pointData, int pointNum, std::vector<PCAInfo> &pcaInfos )
+void PLinkage::setData(PointCloud<double> &data, std::vector<PCAInfo> &pcaInfos)
 {
-	this->pointData = pointData;
-	this->pointNum = pointNum;
+	this->pointData = data;
+	this->pointNum = data.pts.size();
 	this->pcaInfos = pcaInfos;
 }
 
-void NLinkage::run( std::vector<std::vector<int> > &clusters )
+void PLinkage::run( std::vector<std::vector<int> > &clusters )
 {
 	// create linkage
 	std::vector<int> clusterCenterIdx;
@@ -44,7 +43,7 @@ void NLinkage::run( std::vector<std::vector<int> > &clusters )
 	patchMerging( patchesInit, pcaInfos, clusters );
 }
 
-void NLinkage::createLinkage( std::vector<PCAInfo> &pcaInfos, std::vector<int> &clusterCenterIdx, std::vector<std::vector<int> > &singleLinkage )
+void PLinkage::createLinkage( std::vector<PCAInfo> &pcaInfos, std::vector<int> &clusterCenterIdx, std::vector<std::vector<int> > &singleLinkage )
 {
 	cout<<"create linkage"<<endl;
 
@@ -84,9 +83,9 @@ void NLinkage::createLinkage( std::vector<PCAInfo> &pcaInfos, std::vector<int> &
 		}
 		int idx = i;
 		double lambda = pcaInfos[idx].lambda0;
-		double x = pointData[idx][0];
-		double y = pointData[idx][1];
-		double z = pointData[idx][2];
+		double x = pointData.pts[idx].x;
+		double y = pointData.pts[idx].y;
+		double z = pointData.pts[idx].z;
 		cv::Matx31d normal = pcaInfos[idx].normal;
 		double N = sqrt( normal.val[0] * normal.val[0] + normal.val[1] * normal.val[1] + normal.val[2] * normal.val[2] );
 		normal *= double(1.0) / N;
@@ -118,9 +117,9 @@ void NLinkage::createLinkage( std::vector<PCAInfo> &pcaInfos, std::vector<int> &
 			}
 
 			//
-			double xCur = pointData[idxCur][0];
-			double yCur = pointData[idxCur][1];
-			double zCur = pointData[idxCur][2];
+			double xCur = pointData.pts[idxCur].x;
+			double yCur = pointData.pts[idxCur].y;
+			double zCur = pointData.pts[idxCur].z;
 			cv::Matx31d normalCur = pcaInfos[idxCur].normal;
 			double NCur = sqrt( normalCur.val[0] * normalCur.val[0] + normalCur.val[1] * normalCur.val[1] + normalCur.val[2] * normalCur.val[2] );
 			normalCur *= double(1.0) / NCur;
@@ -167,7 +166,7 @@ void NLinkage::createLinkage( std::vector<PCAInfo> &pcaInfos, std::vector<int> &
 	clusterCenterIdx = clusterCenter;
 }
 
-void NLinkage::clustering( std::vector<PCAInfo> &pcaInfos, std::vector<int> &clusterCenterIdx, std::vector<std::vector<int> > &singleLinkage, std::vector<std::vector<int> > &clusters )
+void PLinkage::clustering( std::vector<PCAInfo> &pcaInfos, std::vector<int> &clusterCenterIdx, std::vector<std::vector<int> > &singleLinkage, std::vector<std::vector<int> > &clusters )
 {
 	cout<<"clustering"<<endl;
 	int i, j;
@@ -262,10 +261,10 @@ void NLinkage::clustering( std::vector<PCAInfo> &pcaInfos, std::vector<int> &clu
 
 }
 
-void NLinkage::createPatch( std::vector<std::vector<int> > &clusters, std::vector<PCAInfo> &patches )
+void PLinkage::createPatch( std::vector<std::vector<int> > &clusters, std::vector<PCAInfo> &patches )
 {
 	cout<<" clusters number: "<<clusters.size()<<endl;
-	cout<<"create patch RDPCA"<<endl;
+	cout<<"creating patches ..."<<endl;
 
 	int numCluster = clusters.size();
 	patches.resize( numCluster );
@@ -275,42 +274,43 @@ void NLinkage::createPatch( std::vector<std::vector<int> > &clusters, std::vecto
 	for ( int i=0; i<numCluster; ++i )
 	{
 		int pointNumCur = clusters[i].size();
-		ANNpointArray pointDataCur = annAllocPts( pointNumCur, 3 );
-		for ( int j=0; j<pointNumCur; ++j )
+		std::vector<std::vector<double> > pointDataPatch(clusters[i].size());
+		for ( int j=0; j<clusters[i].size(); ++j )
 		{
-			pointDataCur[j][0] = this->pointData[clusters[i][j]][0];
-			pointDataCur[j][1] = this->pointData[clusters[i][j]][1];
-			pointDataCur[j][2] = this->pointData[clusters[i][j]][2];
+			pointDataPatch.resize(3);
+			int idij = clusters[i][j];
+			pointDataPatch[j][0] = this->pointData.pts[idij].x;
+			pointDataPatch[j][1] = this->pointData.pts[idij].y;
+			pointDataPatch[j][2] = this->pointData.pts[idij].z;
 		}
 		
 		PCAFunctions pcaer;
 		if ( this->pcaMode == ORIPCA )
 		{
-			pcaer.PCASingle( pointDataCur, pointNumCur, patches[i], true );
+			pcaer.PCASingle(pointDataPatch, patches[i] );
 		}
 		else
 		{
-			pcaer.rdPCASingle( pointDataCur, pointNumCur, patches[i], true );
+			pcaer.RDPCASingle(pointDataPatch, patches[i] );
 		}
-
-		//PCAFunctions::rdPCASingle( pointDataCur, patches[i] );
 
 		patches[i].idxAll = clusters[i];
 		patches[i].planePt = cv::Matx31d( 0.0, 0.0, 0.0 );
 		for ( int j=0; j<patches[i].idxIn.size(); ++j )
 		{
 			int idx = patches[i].idxIn[j];
-			patches[i].idxIn[j] = clusters[i][idx];
+			int id = clusters[i][idx];
+			patches[i].idxIn[j] = id;
 
-			patches[i].planePt.val[0] += this->pointData[clusters[i][idx]][0];
-			patches[i].planePt.val[1] += this->pointData[clusters[i][idx]][1];
-			patches[i].planePt.val[2] += this->pointData[clusters[i][idx]][2];
+			patches[i].planePt.val[0] += this->pointData.pts[id].x;
+			patches[i].planePt.val[1] += this->pointData.pts[id].y;
+			patches[i].planePt.val[2] += this->pointData.pts[id].z;
 		}
 		patches[i].planePt *= ( 1.0 / double( patches[i].idxIn.size() ) );
 	}
 }
 
-void NLinkage::patchMerging( std::vector<PCAInfo> &patches, std::vector<PCAInfo> &pcaInfos, std::vector<std::vector<int> > &clusters )
+void PLinkage::patchMerging( std::vector<PCAInfo> &patches, std::vector<PCAInfo> &pcaInfos, std::vector<std::vector<int> > &clusters )
 {
 	cout<<"patch merging"<<endl;
 
@@ -559,7 +559,7 @@ void NLinkage::patchMerging( std::vector<PCAInfo> &patches, std::vector<PCAInfo>
 	cout<<"final plane's number: "<< clusters.size()<<endl;
 }
 
-double NLinkage::meadian( std::vector<double> &dataset )
+double PLinkage::meadian( std::vector<double> &dataset )
 {
 	std::sort( dataset.begin(), dataset.end(), []( const double& lhs, const double& rhs ){ return lhs < rhs; } );
 
