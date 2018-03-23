@@ -38,9 +38,9 @@ public:
 	PCAFunctions(void) {};
 	~PCAFunctions(void) {};
 
-	void Ori_PCA(PointCloud<double> &cloud, int k, std::vector<PCAInfo> &pcaInfos, double &scale, double &magnitd);
+	void PCA(PointCloud<double> &cloud, int k, std::vector<PCAInfo> &pcaInfos);
 
-	void RDPCA(PointCloud<double> &cloud, int k, std::vector<PCAInfo> &pcaInfos, double &scale, double &magnitd);
+	void RDPCA(PointCloud<double> &cloud, int k, std::vector<PCAInfo> &pcaInfos);
 
 	void PCASingle(std::vector<std::vector<double> > &pointData, PCAInfo &pcaInfo);
 

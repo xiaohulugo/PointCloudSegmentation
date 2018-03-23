@@ -12,10 +12,11 @@ PCAFunctions::~PCAFunctions()
 {
 
 }
-void PCAFunctions::Ori_PCA(PointCloud<double> &cloud, int k, std::vector<PCAInfo> &pcaInfos, double &scale, double &magnitd)
+void PCAFunctions::PCA(PointCloud<double> &cloud, int k, std::vector<PCAInfo> &pcaInfos)
 {
 	double MINVALUE = 1e-7;
 	int pointNum = cloud.pts.size();
+	double scale = 0.0, magnitd = 0.0;
 
 	// 1. build kd-tree
 	typedef KDTreeSingleIndexAdaptor< L2_Simple_Adaptor<double, PointCloud<double> >, PointCloud<double>, 3/*dim*/ > my_kd_tree_t;
@@ -109,7 +110,7 @@ void PCAFunctions::Ori_PCA(PointCloud<double> &cloud, int k, std::vector<PCAInfo
 		pcaInfos[i].lambda0 = h_cov_evals.row(2).val[0] / t;
 		pcaInfos[i].normal = h_cov_evectors.row(2).t();
 
-		// outliers removal via MCMD
+		// todo, outliers removal via MCMD
 		pcaInfos[i].idxIn = pcaInfos[i].idxAll;
 
 		delete out_indices[i];
@@ -121,8 +122,9 @@ void PCAFunctions::Ori_PCA(PointCloud<double> &cloud, int k, std::vector<PCAInfo
 	magnitd = sqrt(cloud.pts[0].x*cloud.pts[0].x + cloud.pts[0].y*cloud.pts[0].y + cloud.pts[0].z*cloud.pts[0].z);
 }
 
-void PCAFunctions::RDPCA(PointCloud<double>& cloud, int k, std::vector<PCAInfo>& pcaInfos, double & scale, double & magnitd)
+void PCAFunctions::RDPCA(PointCloud<double>& cloud, int k, std::vector<PCAInfo>& pcaInfos)
 {
+	// removed, bacause it's too slow
 }
 
 void PCAFunctions::PCASingle(std::vector<std::vector<double> > &pointData, PCAInfo &pcaInfo)
@@ -168,6 +170,109 @@ void PCAFunctions::PCASingle(std::vector<std::vector<double> > &pointData, PCAIn
 
 void PCAFunctions::RDPCASingle(std::vector<std::vector<double>>& pointData, PCAInfo & pcaInfo)
 {
+	int i, j;
+	int h0 = 3;
+	int k = pointData.size();
+	int h = k / 2;
+	int iterTime = log(1 - 0.9999) / log(1 - pow(1 - 0.5, h0));
+	double a = 1.4826;
+	double thRz = 2.5;
+
+	std::vector<std::vector<int> > h_subset_idx_vec;
+	for (int iter = 0; iter < iterTime; ++iter)
+	{
+		int h0_idx0 = rand() % k;
+		int h0_idx1 = rand() % k;
+		int h0_idx2 = rand() % k;
+
+		cv::Matx31d h0_0(pointData[h0_idx0][0], pointData[h0_idx0][1], pointData[h0_idx0][2]);
+		cv::Matx31d h0_1(pointData[h0_idx1][0], pointData[h0_idx1][1], pointData[h0_idx1][2]);
+		cv::Matx31d h0_2(pointData[h0_idx2][0], pointData[h0_idx2][1], pointData[h0_idx2][2]);
+		cv::Matx31d h0_mean = (h0_0 + h0_1 + h0_2) * (1.0 / 3.0);
+
+		// PCA
+		cv::Matx33d h0_cov = ((h0_0 - h0_mean) * (h0_0 - h0_mean).t()
+			+ (h0_1 - h0_mean) * (h0_1 - h0_mean).t()
+			+ (h0_2 - h0_mean) * (h0_2 - h0_mean).t()) * (1.0 / 3.0);
+
+		cv::Matx33d h0_cov_evectors;
+		cv::Matx31d h0_cov_evals;
+		cv::eigen(h0_cov, h0_cov_evals, h0_cov_evectors);
+
+		// OD
+		std::vector<std::pair<int, double> > ODs(k);
+		for (i = 0; i < k; ++i)
+		{
+			cv::Matx31d ptMat(pointData[i][0], pointData[i][1], pointData[i][2]);
+			cv::Matx<double, 1, 1> ODMat = (ptMat - h0_mean).t() * h0_cov_evectors.row(2).t();
+			double OD = fabs(ODMat.val[0]);
+			ODs[i].first = i;
+			ODs[i].second = OD;
+		}
+		std::sort(ODs.begin(), ODs.end(), [](const std::pair<int, double>& lhs, const std::pair<int, double>& rhs) { return lhs.second < rhs.second; });
+
+
+		// h-subset
+		std::vector<int> h_subset_idx;
+		for (i = 0; i < h; i++)
+		{
+			h_subset_idx.push_back(ODs[i].first);
+		}
+		h_subset_idx_vec.push_back(h_subset_idx);
+	}
+
+	// calculate the PCA hypotheses
+	std::vector<PCAInfo> S_PCA;
+	S_PCA.resize(h_subset_idx_vec.size());
+	for (i = 0; i < h_subset_idx_vec.size(); ++i)
+	{
+		cv::Matx31d h_mean(0, 0, 0);
+		for (j = 0; j < h; ++j)
+		{
+			int index = h_subset_idx_vec[i][j];
+			h_mean += cv::Matx31d(pointData[index][0], pointData[index][1], pointData[index][2]);
+		}
+		h_mean *= (1.0 / double(h));
+
+		cv::Matx33d h_cov(0, 0, 0, 0, 0, 0, 0, 0, 0);
+		for (j = 0; j < h; ++j)
+		{
+			int index = h_subset_idx_vec[i][j];
+			cv::Matx31d hi = cv::Matx31d(pointData[index][0], pointData[index][1], pointData[index][2]);
+			h_cov += (hi - h_mean) * (hi - h_mean).t();
+		}
+		h_cov *= (1.0 / double(h));
+
+		//
+		cv::Matx33d h_cov_evectors;
+		cv::Matx31d h_cov_evals;
+		cv::eigen(h_cov, h_cov_evals, h_cov_evectors);
+
+		PCAInfo pcaEles;
+		//pcaEles.lambda0 = h_cov_evals.row(2).val[0];
+		pcaEles.lambda0 = h_cov_evals.row(2).val[0] / (h_cov_evals.row(0).val[0] + h_cov_evals.row(1).val[0] + h_cov_evals.row(2).val[0]);
+		pcaEles.normal = h_cov_evectors.row(2).t();
+		pcaEles.idxIn = h_subset_idx_vec[i];
+		S_PCA[i] = pcaEles;
+	}
+
+	// find the best PCA
+	std::sort(S_PCA.begin(), S_PCA.end(), [](const PCAInfo& lhs, const PCAInfo& rhs) { return lhs.lambda0 < rhs.lambda0; });
+	pcaInfo.lambda0 = S_PCA[0].lambda0;
+	pcaInfo.idxIn = S_PCA[0].idxIn;
+
+	pcaInfo.normal = S_PCA[0].normal;
+	double N = sqrt(pcaInfo.normal.val[0] * pcaInfo.normal.val[0] + pcaInfo.normal.val[1] * pcaInfo.normal.val[1] + pcaInfo.normal.val[2] * pcaInfo.normal.val[2]);
+	pcaInfo.normal *= 1.0 / N;
+
+	pcaInfo.idxAll.resize(k);
+	for (i = 0; i < k; ++i)
+	{
+		pcaInfo.idxAll[i] = i;
+	}
+
+	// outliers removal via MCMD
+	MCMD_OutlierRemoval(pointData, pcaInfo);
 }
 
 void PCAFunctions::MCMD_OutlierRemoval(std::vector<std::vector<double> > &pointData, PCAInfo &pcaInfo)

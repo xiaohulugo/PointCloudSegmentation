@@ -1,22 +1,21 @@
-﻿#include "RegionGrow.h"
+﻿#include "PointGrowAngleDis.h"
 #include <fstream>
 #include <stdio.h>
 #include <omp.h>
-#include "highgui.h"
 
 using namespace std;
 
-RegionGrow::RegionGrow( double theta, int Rmin )
+PointGrowAngleDis::PointGrowAngleDis( double theta, int Rmin )
 {
 	this->theta = theta;
 	this->Rmin = Rmin;
 }
 
-RegionGrow::~RegionGrow()
+PointGrowAngleDis::~PointGrowAngleDis()
 {
 }
 
-void RegionGrow::run( std::vector<std::vector<int> > &clusters )
+void PointGrowAngleDis::run( std::vector<std::vector<int> > &clusters )
 {
 	double b = 1.4826;
 
@@ -59,9 +58,9 @@ void RegionGrow::run( std::vector<std::vector<int> > &clusters )
 			for ( int j=0; j<num; ++j )
 			{
 				int idx = pcaInfos[idxSeed].idxIn[j];
-				double dx = this->pointData[idxSeed][0] - this->pointData[idx][0];
-				double dy = this->pointData[idxSeed][1] - this->pointData[idx][1];
-				double dz = this->pointData[idxSeed][2] - this->pointData[idx][2];
+				double dx = this->pointData.pts[idxSeed].x - this->pointData.pts[idx].x;
+				double dy = this->pointData.pts[idxSeed].y - this->pointData.pts[idx].y;
+				double dz = this->pointData.pts[idxSeed].z - this->pointData.pts[idx].z;
 
 				EDs[j] = sqrt( dx * dx + dy * dy + dz * dz );
 			}
@@ -73,7 +72,7 @@ void RegionGrow::run( std::vector<std::vector<int> > &clusters )
 			for( int j = 0; j < num; ++j )
 			{
 				int idx = pcaInfos[idxSeed].idxIn[j];
-				h_mean += cv::Matx31d( pointData[idx][0], pointData[idx][1], pointData[idx][2] );
+				h_mean += cv::Matx31d(this->pointData.pts[idx].x, this->pointData.pts[idx].y, this->pointData.pts[idx].z);
 			}
 			h_mean *= ( 1.0 / num );
 
@@ -81,7 +80,7 @@ void RegionGrow::run( std::vector<std::vector<int> > &clusters )
 			for( int j = 0; j < num; ++j )
 			{
 				int idx = pcaInfos[idxSeed].idxIn[j];
-				cv::Matx31d pt( pointData[idx][0], pointData[idx][1], pointData[idx][2] );
+				cv::Matx31d pt(this->pointData.pts[idx].x, this->pointData.pts[idx].y, this->pointData.pts[idx].z);
 				cv::Matx<double, 1, 1> OD_mat = ( pt - h_mean ).t() * pcaInfos[idxSeed].normal;
 				double OD = fabs( OD_mat.val[0] );
 				ODs[j] = OD;
@@ -133,14 +132,14 @@ void RegionGrow::run( std::vector<std::vector<int> > &clusters )
 	cout<<" number of clusters : "<<clusters.size()<<endl;
 }
 
-void RegionGrow::setData( ANNpointArray pointData, int pointNum, std::vector<PCAInfo> &pcaInfos )
+void PointGrowAngleDis::setData(PointCloud<double> &data, std::vector<PCAInfo> &infos)
 {
-	this->pointData = pointData;
-	this->pointNum = pointNum;
-	this->pcaInfos = pcaInfos;
+	this->pointData = data;
+	this->pointNum = data.pts.size();
+	this->pcaInfos = infos;
 }
 
-double RegionGrow::meadian( std::vector<double> &dataset )
+double PointGrowAngleDis::meadian( std::vector<double> &dataset )
 {
 	std::sort( dataset.begin(), dataset.end(), []( const double& lhs, const double& rhs ){ return lhs < rhs; } );
 

@@ -1,13 +1,11 @@
 ﻿#include "PointCloudSegmentation.h"
 #include <fstream>
 #include <omp.h>
-#include "highgui.h"
 
 #include "PCAFunctions.h"
-#include "NLinkage.h"
-#include "RBNN.h"
-#include "RegionGrow.h"
-#include "SmoothConstraint.h"
+#include "PointGrowAngleOnly.h"
+#include "PointGrowAngleDis.h"
+#include "ClusterGrowPLinkage.h"
 
 using namespace std;
 using namespace cv;
@@ -20,13 +18,15 @@ PointCloudSegmentation::~PointCloudSegmentation()
 {
 }
 
-void PointCloudSegmentation::run( std::string filepath, ALGORITHM algorithm, std::vector<std::vector<int> > &clusters )
+void PointCloudSegmentation::setData(PointCloud<double>& data, std::vector<PCAInfo>& infos)
 {
-	if ( ! setDataFromFile( filepath ) )
-	{
-		cout<<"Data reading error! "<<endl;
-	}
+	this->pointData = data;
+	this->pointNum = data.pts.size();
+	this->pcaInfos = infos;
+}
 
+void PointCloudSegmentation::run( ALGORITHM algorithm, int k, std::vector<std::vector<int> > &clusters )
+{
 	if ( algorithm == PLINKAGE )             // Algorithm 1 : P-Linkage Segmentation 
 	{
 		int k = 100;
@@ -34,7 +34,6 @@ void PointCloudSegmentation::run( std::string filepath, ALGORITHM algorithm, std
 		bool outlierRemoval = true;
 		std::vector<PCAInfo> pcaInfos;
 		PCAFunctions pcaer;
-		//pcaer.HalfK_PCA( this->pointData, this->pointNum, k, pcaInfos, outlierRemoval );
 		pcaer.MCS_PCA( this->pointData, this->pointNum, k, pcaInfos, outlierRemoval );		
 		
 		double theta = 90.0 / 180.0 * CV_PI;
@@ -88,56 +87,6 @@ void PointCloudSegmentation::run( std::string filepath, ALGORITHM algorithm, std
 	{
 		cout<<" please choose an algorithm "<<endl;
 	}
-}
-
-bool PointCloudSegmentation::setDataFromFile( std::string filepath )
-{
-	int i, j;
-	int step = 1;
-
-	// read in point data
-	std::ifstream ptReader( filepath );
-	std::vector<cv::Point3d> lidarPoints;
-	double x = 0, y = 0, z = 0, color = 0;
-	int a = 0, b = 0, c = 0; 
-	int label = 0;
-	int count = 0;
-	if( ptReader.is_open() )
-	{
-		while ( !ptReader.eof() ) 
-		{
-			ptReader >> x >> y >> z >> a >> b >> c >> label;
-			//ptReader >> x >> y >> z;
-			//ptReader >> x >> y >> z >> color;
-			if ( count == step )
-			{
-				lidarPoints.push_back( cv::Point3d( x, y, z ) );
-				count = 0;
-			}
-			
-			count ++;
-		}
-		ptReader.close();
-	}
-	else
-	{
-		return false;
-	}
-
-	// data processing
-	this->pointNum = (int) lidarPoints.size();
-	this->pointData = annAllocPts( this->pointNum, 3 );
-	for ( int i = 0 ; i < this->pointNum ; i++ )
-	{
-		this->pointData[i][0] = (double)lidarPoints[i].x;
-		this->pointData[i][1] = (double)lidarPoints[i].y;
-		this->pointData[i][2] = (double)lidarPoints[i].z;
-	}
-	std::vector<cv::Point3d>().swap(lidarPoints);
-
-	std::cout << "Total num of points: " << this->pointNum << "\n";
-
-	return true;
 }
 
 void PointCloudSegmentation::setDataFromANN( ANNpointArray pointData, int pointNum )

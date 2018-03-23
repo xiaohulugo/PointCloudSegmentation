@@ -1,30 +1,29 @@
-﻿#include "PLinkage.h"
+﻿#include "ClusterGrowPLinkage.h"
 #include <fstream>
 #include <stdio.h>
 #include <omp.h>
 
 using namespace std;
 
-PLinkage::PLinkage( int k, double theta, PLANE_MODE planeMode, PCA_MODE pcaMode )
+ClusterGrowPLinkage::ClusterGrowPLinkage( int k, double theta, PLANE_MODE planeMode )
 {
 	this->k = k;
 	this->theta = theta;
 	this->planeMode = planeMode;
-	this->pcaMode = pcaMode;
 }
 
-PLinkage::~PLinkage()
+ClusterGrowPLinkage::~ClusterGrowPLinkage()
 {
 }
 
-void PLinkage::setData(PointCloud<double> &data, std::vector<PCAInfo> &pcaInfos)
+void ClusterGrowPLinkage::setData(PointCloud<double> &data, std::vector<PCAInfo> &pcaInfos)
 {
 	this->pointData = data;
 	this->pointNum = data.pts.size();
 	this->pcaInfos = pcaInfos;
 }
 
-void PLinkage::run( std::vector<std::vector<int> > &clusters )
+void ClusterGrowPLinkage::run( std::vector<std::vector<int> > &clusters )
 {
 	// create linkage
 	std::vector<int> clusterCenterIdx;
@@ -43,7 +42,7 @@ void PLinkage::run( std::vector<std::vector<int> > &clusters )
 	patchMerging( patchesInit, pcaInfos, clusters );
 }
 
-void PLinkage::createLinkage( std::vector<PCAInfo> &pcaInfos, std::vector<int> &clusterCenterIdx, std::vector<std::vector<int> > &singleLinkage )
+void ClusterGrowPLinkage::createLinkage( std::vector<PCAInfo> &pcaInfos, std::vector<int> &clusterCenterIdx, std::vector<std::vector<int> > &singleLinkage )
 {
 	cout<<"create linkage"<<endl;
 
@@ -166,7 +165,7 @@ void PLinkage::createLinkage( std::vector<PCAInfo> &pcaInfos, std::vector<int> &
 	clusterCenterIdx = clusterCenter;
 }
 
-void PLinkage::clustering( std::vector<PCAInfo> &pcaInfos, std::vector<int> &clusterCenterIdx, std::vector<std::vector<int> > &singleLinkage, std::vector<std::vector<int> > &clusters )
+void ClusterGrowPLinkage::clustering( std::vector<PCAInfo> &pcaInfos, std::vector<int> &clusterCenterIdx, std::vector<std::vector<int> > &singleLinkage, std::vector<std::vector<int> > &clusters )
 {
 	cout<<"clustering"<<endl;
 	int i, j;
@@ -226,42 +225,9 @@ void PLinkage::clustering( std::vector<PCAInfo> &pcaInfos, std::vector<int> &clu
 
 		count1 ++;
 	}
-
-	/*
-	//
-	int numCenter = clusterCenterIdx.size();
-
-	for ( i=0; i<numCenter; ++i )
-	{
-		std::vector<int> seedIdx;
-		seedIdx.push_back( clusterCenterIdx[i] );
-
-		std::vector<int> cluster;
-		cluster.push_back( clusterCenterIdx[i] );
-
-		int count = 0;
-		while ( count < seedIdx.size() )
-		{
-			int idxCur = seedIdx[count];
-			for ( j=0; j<singleLinkage[idxCur].size(); ++j )
-			{
-				cluster.push_back( singleLinkage[idxCur][j] );
-				seedIdx.push_back( singleLinkage[idxCur][j] );
-			}
-
-			count ++;
-		}
-
-		if ( cluster.size() >= 10 )
-		{
-			clusters.push_back( cluster );
-		}
-	}
-	*/
-
 }
 
-void PLinkage::createPatch( std::vector<std::vector<int> > &clusters, std::vector<PCAInfo> &patches )
+void ClusterGrowPLinkage::createPatch( std::vector<std::vector<int> > &clusters, std::vector<PCAInfo> &patches )
 {
 	cout<<" clusters number: "<<clusters.size()<<endl;
 	cout<<"creating patches ..."<<endl;
@@ -285,14 +251,8 @@ void PLinkage::createPatch( std::vector<std::vector<int> > &clusters, std::vecto
 		}
 		
 		PCAFunctions pcaer;
-		if ( this->pcaMode == ORIPCA )
-		{
-			pcaer.PCASingle(pointDataPatch, patches[i] );
-		}
-		else
-		{
-			pcaer.RDPCASingle(pointDataPatch, patches[i] );
-		}
+		//pcaer.PCASingle(pointDataPatch, patches[i] );
+		pcaer.RDPCASingle(pointDataPatch, patches[i] );
 
 		patches[i].idxAll = clusters[i];
 		patches[i].planePt = cv::Matx31d( 0.0, 0.0, 0.0 );
@@ -310,7 +270,7 @@ void PLinkage::createPatch( std::vector<std::vector<int> > &clusters, std::vecto
 	}
 }
 
-void PLinkage::patchMerging( std::vector<PCAInfo> &patches, std::vector<PCAInfo> &pcaInfos, std::vector<std::vector<int> > &clusters )
+void ClusterGrowPLinkage::patchMerging( std::vector<PCAInfo> &patches, std::vector<PCAInfo> &pcaInfos, std::vector<std::vector<int> > &clusters )
 {
 	cout<<"patch merging"<<endl;
 
@@ -350,11 +310,6 @@ void PLinkage::patchMerging( std::vector<PCAInfo> &patches, std::vector<PCAInfo>
 
  	double surfaceVarianceMin = medianValue;
  	double surfaceVarianceMax = medianValue + 2.5 * MAD ;
-
-// 	double surfaceVarianceMin = 0.00040591;
-// 	double surfaceVarianceMax = 0.00364508;
-// 	//cout<<surfaceVarianceMin1<<"  "<<surfaceVarianceMax1<<endl;
- 	cout<<surfaceVarianceMin<<"  "<<surfaceVarianceMax<<endl;
 
 	double k = ( maxAngle - minAngle ) / ( surfaceVarianceMax - surfaceVarianceMin );
 	std::vector<double> thAngle( patches.size(), 0.0 );
@@ -559,7 +514,7 @@ void PLinkage::patchMerging( std::vector<PCAInfo> &patches, std::vector<PCAInfo>
 	cout<<"final plane's number: "<< clusters.size()<<endl;
 }
 
-double PLinkage::meadian( std::vector<double> &dataset )
+double ClusterGrowPLinkage::meadian( std::vector<double> &dataset )
 {
 	std::sort( dataset.begin(), dataset.end(), []( const double& lhs, const double& rhs ){ return lhs < rhs; } );
 

@@ -3,7 +3,8 @@
 #pragma once
 
 #include <stdio.h>
-#include "ANN.h"
+#include "PCAFunctions.h"
+#include "nanoflann.hpp"
 #include "opencv/cv.h"
 
 enum ALGORITHM { PLINKAGE, REGIONGROW, SMOOTHCONSTRAINT, RBNNN };
@@ -14,11 +15,9 @@ public:
 	PointCloudSegmentation();
 	~PointCloudSegmentation();
 
-	void run( std::string filepath, ALGORITHM algorithm, std::vector<std::vector<int> > &clusters );
+	void setData(PointCloud<double> &data, std::vector<PCAInfo> &pcaInfos);
 
-	bool setDataFromFile( std::string filepath );
-
-	void setDataFromANN( ANNpointArray pointData, int pointNum );
+	void run( ALGORITHM algorithm, std::vector<std::vector<int> > &clusters );
 
 	void writeOutClusters( std::string filePath, std::vector<std::vector<int> > &clusters );
 
@@ -26,7 +25,8 @@ public:
 
 private:
 	int pointNum;
-	ANNpointArray pointData;
+	PointCloud<double> pointData;
+	std::vector<PCAInfo> pcaInfos;
 };
 
 #endif //_POINT_CLOUD_SEGMENTATION_H_

@@ -1,22 +1,21 @@
-﻿#include "SmoothConstraint.h"
+﻿#include "PointGrowAngleOnly.h"
 #include <fstream>
 #include <stdio.h>
 #include <omp.h>
-#include "highgui.h"
 
 using namespace std;
 
-SmoothConstraint::SmoothConstraint( double theta, double percent )
+PointGrowAngleOnly::PointGrowAngleOnly( double theta, double percent )
 {
 	this->theta = theta;
 	this->percent = percent;
 }
 
-SmoothConstraint::~SmoothConstraint()
+PointGrowAngleOnly::~PointGrowAngleOnly()
 {
 }
 
-void SmoothConstraint::run( std::vector<std::vector<int> > &clusters )
+void PointGrowAngleOnly::run( std::vector<std::vector<int> > &clusters )
 {
 	// residual threshold
 	std::vector<std::pair<int,double> > idxSorted( this->pointNum );
@@ -90,7 +89,7 @@ void SmoothConstraint::run( std::vector<std::vector<int> > &clusters )
 	cout<<" number of clusters : "<<clusters.size()<<endl;
 }
 
-void SmoothConstraint::setData( ANNpointArray pointData, int pointNum, std::vector<PCAInfo> &pcaInfos )
+void PointGrowAngleOnly::setData(PointCloud<double> &data, std::vector<PCAInfo> &pcaInfos)
 {
 	this->pointData = pointData;
 	this->pointNum = pointNum;
