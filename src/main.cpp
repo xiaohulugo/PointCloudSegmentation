@@ -2,7 +2,6 @@
 #include <vector>
 #include <fstream>
 
-#include "PointCloudSegmentation.h"
 #include "nanoflann.hpp"
 #include "utils.h"
 #include "cv.h"
@@ -35,8 +34,8 @@ void readDataFromFile(std::string filepath, PointCloud<double> &cloud)
 			//ptReader >> x >> y >> z >> a >> b >> c >> labelIdx;
 			//ptReader >> x >> y >> z >> a >> b >> c >> color;
 			//ptReader >> x >> y >> z >> color >> a >> b >> c;
-			//ptReader >> x >> y >> z >> a >> b >> c ;
-			ptReader >> x >> y >> z;
+			ptReader >> x >> y >> z >> a >> b >> c ;
+			//ptReader >> x >> y >> z;
 			//ptReader >> x >> y >> z >> color;
 			//ptReader >> x >> y >> z >> nx >> ny >> nz;
 
@@ -87,8 +86,8 @@ void writeOutClusters(string filePath, PointCloud<double> &pointData, std::vecto
 
 void main()
 {
-	std::string fileData = "J:\\data.txt";
-	std::string fileResult = "C:\\clusterPoints.txt";
+	std::string fileData = "C:\\Users\\LXH\\Desktop\\HU005.txt";
+	std::string fileResult = "C:\\Users\\LXH\\Desktop\\result.txt";
 
 	// step1: read in data
 	PointCloud<double> pointData;
@@ -125,7 +124,7 @@ void main()
 	// Algorithm3: segmentation via normal angle similarity and point-plane distance
 	else
 	{
-		double theta = 5.0 / 180.0 * CV_PI;
+		double theta = 10.0 / 180.0 * CV_PI;
 		int RMin = 10;  // minimal number of points per cluster
 		PointGrowAngleDis segmenter(theta, RMin);
 		segmenter.setData(pointData, pcaInfos);

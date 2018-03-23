@@ -13,7 +13,6 @@ using namespace std;
 using namespace nanoflann;
 
 enum PLANE_MODE { PLANE, SURFACE };
-enum PCA_MODE { ORIPCA, RDPCA };
 
 struct PCAInfo
 {

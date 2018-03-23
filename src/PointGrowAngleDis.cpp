@@ -15,6 +15,13 @@ PointGrowAngleDis::~PointGrowAngleDis()
 {
 }
 
+void PointGrowAngleDis::setData(PointCloud<double> &data, std::vector<PCAInfo> &infos)
+{
+	this->pointData = data;
+	this->pointNum = data.pts.size();
+	this->pcaInfos = infos;
+}
+
 void PointGrowAngleDis::run( std::vector<std::vector<int> > &clusters )
 {
 	double b = 1.4826;
@@ -45,6 +52,7 @@ void PointGrowAngleDis::run( std::vector<std::vector<int> > &clusters )
 		//
 		std::vector<int> clusterNew;
 		clusterNew.push_back( idxSorted[i].first );
+		cv::Matx31d normalStart = pcaInfos[idxSorted[i].first].normal;
 
 		int count = 0;
 		while( count < clusterNew.size() )
@@ -111,7 +119,14 @@ void PointGrowAngleDis::run( std::vector<std::vector<int> > &clusters )
 				if ( ODs[j] < ODth && EDs[j] < EDth )
 				{
 					cv::Matx31d normalCur = pcaInfos[idx].normal;
-					double angle = acos( normalCur.val[0] * normalSeed.val[0] + normalCur.val[1] * normalSeed.val[1] + normalCur.val[2] * normalSeed.val[2] );
+					double angle = acos( normalCur.val[0] * normalStart.val[0]
+						+ normalCur.val[1] * normalStart.val[1]
+						+ normalCur.val[2] * normalStart.val[2] );
+					if (angle != angle)
+					{
+						continue;
+					}
+
 					if ( min( angle, CV_PI -angle ) < this->theta )
 					{
 						clusterNew.push_back( idx );
@@ -130,13 +145,6 @@ void PointGrowAngleDis::run( std::vector<std::vector<int> > &clusters )
 	}
 
 	cout<<" number of clusters : "<<clusters.size()<<endl;
-}
-
-void PointGrowAngleDis::setData(PointCloud<double> &data, std::vector<PCAInfo> &infos)
-{
-	this->pointData = data;
-	this->pointNum = data.pts.size();
-	this->pcaInfos = infos;
 }
 
 double PointGrowAngleDis::meadian( std::vector<double> &dataset )

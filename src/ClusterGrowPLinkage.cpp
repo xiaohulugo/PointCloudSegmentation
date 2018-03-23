@@ -243,7 +243,7 @@ void ClusterGrowPLinkage::createPatch( std::vector<std::vector<int> > &clusters,
 		std::vector<std::vector<double> > pointDataPatch(clusters[i].size());
 		for ( int j=0; j<clusters[i].size(); ++j )
 		{
-			pointDataPatch.resize(3);
+			pointDataPatch[j].resize(3);
 			int idij = clusters[i][j];
 			pointDataPatch[j][0] = this->pointData.pts[idij].x;
 			pointDataPatch[j][1] = this->pointData.pts[idij].y;

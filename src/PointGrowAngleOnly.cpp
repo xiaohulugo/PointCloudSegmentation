@@ -15,6 +15,14 @@ PointGrowAngleOnly::~PointGrowAngleOnly()
 {
 }
 
+void PointGrowAngleOnly::setData(PointCloud<double> &data, std::vector<PCAInfo> &infos)
+{
+	this->pointData = data;
+	this->pointNum = data.pts.size();
+	this->pcaInfos = infos;
+}
+
+
 void PointGrowAngleOnly::run( std::vector<std::vector<int> > &clusters )
 {
 	// residual threshold
@@ -89,9 +97,3 @@ void PointGrowAngleOnly::run( std::vector<std::vector<int> > &clusters )
 	cout<<" number of clusters : "<<clusters.size()<<endl;
 }
 
-void PointGrowAngleOnly::setData(PointCloud<double> &data, std::vector<PCAInfo> &pcaInfos)
-{
-	this->pointData = pointData;
-	this->pointNum = pointNum;
-	this->pcaInfos = pcaInfos;
-}

@@ -4,16 +4,9 @@
 
 using namespace std;
 
-PCAFunctions::PCAFunctions()
-{
-}
-
-PCAFunctions::~PCAFunctions()
-{
-
-}
 void PCAFunctions::PCA(PointCloud<double> &cloud, int k, std::vector<PCAInfo> &pcaInfos)
 {
+	cout << "building kd-tree ..." << endl;
 	double MINVALUE = 1e-7;
 	int pointNum = cloud.pts.size();
 	double scale = 0.0, magnitd = 0.0;
@@ -43,6 +36,8 @@ void PCAFunctions::PCA(PointCloud<double> &cloud, int k, std::vector<PCAInfo> &p
 		delete dis_temp;
 	}
 	index.freeIndex(index);
+
+	cout << "pca normal calculation ..." << endl;
 
 	// 3. PCA normal estimation
 	scale = 0.0;
