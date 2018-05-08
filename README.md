@@ -7,6 +7,8 @@ Three algorithms on point cloud segmentation used in the following paper:
 Pairwise Linkage for Point Cloud Segmentation, Xiaohu Lu, etc. ISPRS2016.
 https://github.com/xiaohulugo/xiaohulugo.github.com/blob/master/papers/PLinkage_Point_Segmentation_ISPRS2016.pdf
 
+*The algorithm used in the ISPRS2016 paper is ClusterGrowPLinkage.cpp
+
 Prerequisites:
 ---
 1. OpenCV > 2.4.x
