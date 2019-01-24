@@ -20,6 +20,20 @@ Usage:
 2. run the code
 3. see main.cpp for interfaces/demos
 
+Docker: (For linux)
+---
+1. Build the docker image by running `docker build -t opencv:cpp .` to build the docker image with name `opencv` and tag `cpp`
+2. Modify the code as you wish. Also the default data folder for test is `./data` in the root path.
+3. Modify the `test_segment.sh`. This is the script the container will run after it is set up.
+4. Run the following command in the root path of the project.
+
+```docker
+docker run -it --rm \
+    -v $(pwd):/pointSegment \
+    opencv:cpp \
+    /pointSegment/test_segment.sh
+```
+
 Performance:
 ---
 <img src="https://github.com/xiaohulugo/images/blob/master/vehicle.jpg" width="640">
