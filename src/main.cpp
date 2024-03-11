@@ -4,7 +4,9 @@
 
 #include "nanoflann.hpp"
 #include "utils.h"
-#include "cv.h"
+//#include "cv.h"
+#include "opencv2/core.hpp"
+
 
 #include "PointGrowAngleOnly.h"
 #include "PointGrowAngleDis.h"
@@ -84,7 +86,7 @@ void writeOutClusters(string filePath, PointCloud<double> &pointData, std::vecto
 	fclose(fp);
 }
 
-void main()
+int main(void)
 {
 	std::string fileData = "C:\\Users\\LXH\\Desktop\\HU005.txt";
 	std::string fileResult = "C:\\Users\\LXH\\Desktop\\result.txt";
